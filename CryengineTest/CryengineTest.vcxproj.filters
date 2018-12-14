@@ -24,9 +24,6 @@
     <ClCompile Include="mainTest.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="CRenderViewport.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="DisplayContext.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
@@ -36,9 +33,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="CRenderViewport.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="DisplayContext.h">

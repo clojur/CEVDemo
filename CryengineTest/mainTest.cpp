@@ -13,8 +13,8 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 	pCeTest->StartProjectContext();
 
 	pCeTest->GetIEngine()->UnloadLevel();
-	bool bOpen= GetISystem()->GetIPak()->OpenPacks("G:/CryEngine/CEProject/Blank/Assets/levels/example/*.pak");
-	bOpen= pCeTest->GetIEngine()->LoadLevel("G:/CryEngine/CEProject/Blank/Assets/levels/example", "Mission0");
+	//bool bOpen= GetISystem()->GetIPak()->OpenPacks("G:/CryEngine/CEProject/test/Assets/levels/example/*.pak");
+	//bOpen= pCeTest->GetIEngine()->LoadLevel("G:/CryEngine/CEProject/test/Assets/levels/example", "Mission0");
 	pCeTest->Run();
 	return 0;
 }

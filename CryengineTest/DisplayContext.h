@@ -64,12 +64,12 @@ struct  DisplayContext
 	void              Flush2D();
 
 	void              SetCamera(CCamera* pCamera);
-	CCamera&          GetCamera() { return (camera) ? *camera : GetISystem()->GetViewCamera(); }
+	const CCamera&          GetCamera() { return (camera) ? *camera : GetISystem()->GetViewCamera(); }
 
 	int               GetWidth() const { return static_cast<int>(m_width); }
 	int               GetHeight() const { return static_cast<int>(m_height); }
 
-	void              SetDisplayContext(uintptr_t displayContext, IRenderer::EViewportType eType = IRenderer::eViewportType_Default);
+	void              SetDisplayContext(const SDisplayContextKey &displayContextKey, IRenderer::EViewportType eType = IRenderer::eViewportType_Default);
 
 	//////////////////////////////////////////////////////////////////////////
 	// Draw functions
@@ -234,5 +234,7 @@ private:
 		float color[4];
 	};
 	std::vector<STextureLabel> m_textureLabels;
+
+	SDisplayContextKey m_displayContextKey;
 };
 

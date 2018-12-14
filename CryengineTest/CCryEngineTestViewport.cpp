@@ -51,7 +51,7 @@ static void GameSystemAuthCheckFunction(void* data)
 using namespace YJGLSJ;
 
  CCryEngineTestViewport* CCryEngineTestViewport::s_instance =nullptr;
-
+ void* CCryEngineTestViewport::m_currentContextWnd = 0;
 CCryEngineTestViewport::CCryEngineTestViewport(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 	: m_hInstance(hInstance)
 	, m_hPrevInstance(hPrevInstance)
@@ -61,6 +61,7 @@ CCryEngineTestViewport::CCryEngineTestViewport(HINSTANCE hInstance, HINSTANCE hP
 	, m_bRenderStats(true)
 	, m_bEmptyScene(true)
 {
+	m_currentResolution.width = m_currentResolution.height = 0;
 }
 
 
@@ -70,10 +71,10 @@ CCryEngineTestViewport::~CCryEngineTestViewport()
 
 void CCryEngineTestViewport::YJGLSJCreateWindow(int x, int y, int width, int height, const char * windowTitle)
 {
-	m_ix = x;
-	m_iy = y;
-	m_iWidth = width;
-	m_iHeight = height;
+	m_currentResolution.x = x;
+	m_currentResolution.y = y;
+	m_currentResolution.width= width;
+	m_currentResolution.height =height;
 	m_cszTitle = windowTitle;
 
 	InitializeWindow();
@@ -164,6 +165,16 @@ bool YJGLSJ::CCryEngineTestViewport::StartProjectContext()
 	return false;
 }
 
+CCryEngineTestViewport::SPreviousContext YJGLSJ::CCryEngineTestViewport::SetCurrentContext()
+{
+	SPreviousContext x;
+	m_currentContextWnd = GetSafeHwnd();
+
+	GetISystem()->SetViewCamera(CCamera(m_Camera));
+
+	return x;
+}
+
 void YJGLSJ::CCryEngineTestViewport::SetISystem(ISystem * pSystem)
 {
 	m_pSystem = pSystem;
@@ -179,35 +190,40 @@ void YJGLSJ::CCryEngineTestViewport::SetIEngine(I3DEngine * pEngine)
 	m_pEngine = pEngine;
 }
 
-bool YJGLSJ::CCryEngineTestViewport::CreateRenderContext(uintptr_t displayContextHandle, IRenderer::EViewportType viewportType)
+bool YJGLSJ::CCryEngineTestViewport::CreateRenderContext(HWND hWnd, IRenderer::EViewportType viewportType)
 {
-	if (displayContextHandle&&m_pRenderer && !m_bRenderContextCreated)
+	// Create context.
+	if (hWnd && m_pRenderer && !m_bRenderContextCreated)
 	{
 		IRenderer::SDisplayContextDescription desc;
 
-		desc.handle = displayContextHandle;
+		desc.handle = hWnd;
 		desc.type = viewportType;
 		desc.clearColor = ColorF(0.4f, 0.4f, 0.4f, 1.0f);
 		desc.renderFlags = FRT_CLEAR | FRT_OVERLAY_DEPTH;
 		desc.superSamplingFactor.x = 1;
 		desc.superSamplingFactor.y = 1;
-		desc.screenResolution.x = m_iWidth;
-		desc.screenResolution.y = m_iHeight;
+		desc.screenResolution.x = m_currentResolution.width;
+		desc.screenResolution.y = m_currentResolution.height;
 
-		m_pRenderer->CreateContext(desc);
+		m_displayContextKey = m_pRenderer->CreateSwapChainBackedContext(desc);
 		m_bRenderContextCreated = true;
 
-		m_pSystem->SetViewCamera(m_Camera);
+		// Make main context current.
+		SetCurrentContext();
 		return true;
 	}
+
 	return false;
 }
 
-void YJGLSJ::CCryEngineTestViewport::InitDisplayContext(uintptr_t displayContextHandle)
+void YJGLSJ::CCryEngineTestViewport::InitDisplayContext(SDisplayContextKey displayContextKey)
 {
+	CRY_PROFILE_FUNCTION(PROFILE_EDITOR);
+
 	// Draw all objects.
 	DisplayContext& dctx = m_displayContext;
-	dctx.SetDisplayContext(displayContextHandle, IRenderer::eViewportType_Default);
+	dctx.SetDisplayContext(displayContextKey, IRenderer::eViewportType_Default);
 	dctx.SetView(this);
 	dctx.SetCamera(&m_Camera);
 	dctx.renderer = m_pRenderer;
@@ -230,63 +246,127 @@ void YJGLSJ::CCryEngineTestViewport::OnRender()
 	if (!m_pRenderer || !m_pEngine)
 		return;
 
-	//正常渲染
-	uintptr_t displayContextHandle = reinterpret_cast<uintptr_t>(m_hWnd);
+	////正常渲染
+	//uintptr_t displayContextHandle = reinterpret_cast<uintptr_t>(m_hWnd);
 	m_viewTM = m_Camera.GetMatrix();
 	if (!m_bRenderContextCreated)
 	{
-		if (!CreateRenderContext(displayContextHandle))
+		if (!CreateRenderContext((HWND)GetSafeHwnd(), IRenderer::EViewportType::eViewportType_Secondary))
 			return;
+
+		// Configures Aux to draw to the current display-context
+		InitDisplayContext(m_displayContextKey);
+
+		//m_pModel= gEnv->p3DEngine->LoadStatObj("G:\\CryEngine\\CEProject\\test\\Assets\\objects\\sphere.cgf", false);
+		//m_pMaterial = gEnv->p3DEngine->GetMaterialManager()->LoadMaterial("G:\\CryEngine\\CEProject\\test\\Assets\\Materials\\generic\\metal\\gold.mtl");
 	}
 
-	RECT  rcClient;
-	::GetClientRect((HWND)m_hWnd, &rcClient);
-	if (rcClient.right < 16 || rcClient.bottom < 16)
-		return;
+	//RECT  rcClient;
+	//::GetClientRect((HWND)m_hWnd, &rcClient);
+	//if (rcClient.right < 16 || rcClient.bottom < 16)
+	//	return;
 
-	// Configures Aux to draw to the current display-context
-	InitDisplayContext(displayContextHandle);
 
 	// 3D engine stats
-	m_pSystem->RenderBegin(displayContextHandle);
+	//m_pSystem->RenderBegin(m_displayContextKey);
 
-	bool bRenderStats = m_bRenderStats;
+	//bool bRenderStats = m_bRenderStats;
 
-	float fNearZ = 0.25;
-	float fFarZ = m_Camera.GetFarPlane();
-	float fov = 1.04712;// 60°
-	float viewportAspectRatio = float(m_iWidth) / m_iHeight;
-	float fMaxMaxViewDistance = m_pEngine->GetMaxViewDistance();
-	m_Camera.SetFrustum(m_iWidth, m_iHeight, fNearZ, fMaxMaxViewDistance);
+	//float fNearZ = 0.25;
+	//float fFarZ = m_Camera.GetFarPlane();
+	//float fov = 1.04712;// 60°
+	//float viewportAspectRatio = float(m_currentResolution.width) / m_currentResolution.height;
+	//float fMaxMaxViewDistance = m_pEngine->GetMaxViewDistance();
+	//m_Camera.SetFrustum(m_currentResolution.width, m_currentResolution.height, fNearZ, fMaxMaxViewDistance);
+	//m_pSystem->RenderEnd(bRenderStats);
+	//const int32 renderFlags =0;
+	//SRenderingPassInfo passInfo = SRenderingPassInfo::CreateGeneralPassRenderingInfo(m_Camera, SRenderingPassInfo::DEFAULT_FLAGS,false, m_displayContextKey);
+	//m_pEngine->RenderWorld(renderFlags | SHDF_ALLOW_AO | SHDF_ALLOWPOSTPROCESS | SHDF_ALLOW_WATER | SHDF_ALLOWHDR | SHDF_ZPASS, passInfo, __FUNCTION__);
 
-	//if (ITestSystem* pTestSystem = m_pSystem->GetITestSystem())
-	//	pTestSystem->BeforeRender();
-	m_pRenderer->BeginFrame(CryDisplayContextHandle(displayContextHandle));
+	//m_displayContext.SetState(e_Mode3D | e_AlphaBlended | e_FillModeSolid | e_CullModeBack | e_DepthWriteOn | e_DepthTestOn);
+	//DrawAxis();
 
-	m_pEngine->Tick();
-	m_pEngine->Update();
+	////if (ITestSystem* pTestSystem = m_pSystem->GetITestSystem())
+	////	pTestSystem->AfterRender();
 
-	const int32 renderFlags =0;
-	SRenderingPassInfo passInfo = SRenderingPassInfo::CreateGeneralPassRenderingInfo(m_Camera, SRenderingPassInfo::DEFAULT_FLAGS, false, (CryDisplayContextHandle)(m_hWnd));
-	m_pEngine->RenderWorld(renderFlags | SHDF_ALLOW_AO | SHDF_ALLOWPOSTPROCESS | SHDF_ALLOW_WATER | SHDF_ALLOWHDR | SHDF_ZPASS, passInfo, __FUNCTION__);
+	//m_displayContext.Flush2D();
 
-	m_displayContext.SetState(e_Mode3D | e_AlphaBlended | e_FillModeSolid | e_CullModeBack | e_DepthWriteOn | e_DepthTestOn);
-	DrawAxis();
+	//// 3D engine stats
+	//CCamera CurCamera = m_pSystem->GetViewCamera();
+	//m_pSystem->SetViewCamera(m_Camera);
 
-	//if (ITestSystem* pTestSystem = m_pSystem->GetITestSystem())
-	//	pTestSystem->AfterRender();
+	//m_pSystem->RenderEnd(bRenderStats);
+	//m_pSystem->SetViewCamera(CurCamera);
 
-	m_displayContext.Flush2D();
-
-	CCamera CurCamera = m_pSystem->GetViewCamera();
-	m_pSystem->SetViewCamera(m_Camera);
-
-	m_pSystem->RenderEnd(bRenderStats);
-	m_pSystem->SetViewCamera(CurCamera);
-
-	m_pRenderer->EndFrame();
+	//m_pRenderer->EndFrame();
 	//m_pRenderer->EnableSwapBuffers(true);
-	gEnv->nMainFrameID++;
+	//gEnv->nMainFrameID++;
+
+
+	//2D渲染
+	gEnv->pSystem->GetIProfileSystem()->StartFrame();
+	if (!gEnv->pRenderer)
+		return;
+
+
+	CScopedWireFrameMode scopedWireFrame(gEnv->pRenderer, R_SOLID_MODE);
+
+	//////////////////////////////////////////////////////////////////////////
+	// 2D Mode.
+	//////////////////////////////////////////////////////////////////////////
+	if (m_currentResolution.height&&m_currentResolution.width)
+	{
+		gEnv->pRenderer->GetIRenderAuxGeom()->SetOrthographicProjection(true, 0.0f, m_currentResolution.width, m_currentResolution.height, 0.0f);
+
+		//////////////////////////////////////////////////////////////////////////
+		// Draw viewport elements here.
+		//////////////////////////////////////////////////////////////////////////
+		// Calc world bounding box for objects rendering.
+		Vec3 org;
+		AABB box;
+		box.Reset();
+		box.Add(Vec3(0,0,0));
+		box.Add(Vec3(1000,1000,1000));
+		// Draw all objects.
+		DisplayContext& dc = m_displayContext;
+
+		dc.view = this;
+		dc.renderer = gEnv->pRenderer;
+		dc.engine = gEnv->p3DEngine;
+		dc.flags = DISPLAY_2D;
+		dc.box = box;
+		m_Camera = gEnv->pSystem->GetViewCamera();
+		// Should be setting orthogonal camera
+		m_Camera.SetFrustum(m_currentResolution.width,m_currentResolution.height, m_Camera.GetFov(), m_Camera.GetNearPlane(), m_Camera.GetFarPlane());
+		dc.SetCamera(&m_Camera);
+		dc.SetDisplayContext(m_displayContextKey);
+		dc.flags |= DISPLAY_HIDENAMES;
+
+		// Render
+		gEnv->pRenderer->BeginFrame(m_displayContextKey);
+
+		// TODO: BeginFrame/EndFrame calls can be droped and replaced by RT_AuxRender
+		auto oldCamera = gEnv->pRenderer->GetIRenderAuxGeom()->GetCamera();
+		gEnv->pRenderer->UpdateAuxDefaultCamera(m_Camera);
+
+		SRenderingPassInfo passInfo = SRenderingPassInfo::CreateGeneralPassRenderingInfo(gEnv->pSystem->GetViewCamera(), SRenderingPassInfo::DEFAULT_FLAGS, false, m_displayContextKey);
+
+		gEnv->pRenderer->EF_StartEf(passInfo);
+		dc.SetState(e_Mode3D | e_AlphaBlended | e_FillModeSolid | e_CullModeBack | e_DepthWriteOff | e_DepthTestOn);
+		//Draw(CObjectRenderHelper{ dc, passInfo });
+		gEnv->pRenderer->EF_EndEf3D(SHDF_ALLOWHDR | SHDF_SECONDARY_VIEWPORT, -1, -1, passInfo);
+
+		// Return back from 2D mode.
+		gEnv->pRenderer->GetIRenderAuxGeom()->SetOrthographicProjection(false);
+
+		gEnv->pRenderer->RenderDebug(false);
+
+		//ProcessRenderListeners(m_displayContext);
+
+		gEnv->pRenderer->EndFrame();
+	}
+
+	gEnv->pSystem->GetIProfileSystem()->EndFrame();
 }
 
 void YJGLSJ::CCryEngineTestViewport::DrawAxis()
@@ -347,6 +427,36 @@ void YJGLSJ::CCryEngineTestViewport::DrawAxis()
 	dc.SetState(prevRState);
 }
 
+void YJGLSJ::CCryEngineTestViewport::DrawModel(const SRenderingPassInfo & passInfo)
+{
+	IRenderAuxGeom* pAuxGeom = m_pRenderer->GetIRenderAuxGeom();
+	m_pRenderer->EF_StartEf(passInfo);
+
+	//f32 fDistance =m_Camera.GetViewMatrix().GetTranslation().GetLength();
+	//SRendParams rp;
+	//rp.fDistance = fDistance;
+
+	//Matrix34 tm;
+	//tm.SetIdentity();
+	//rp.pMatrix = &tm;
+	//rp.pPrevMatrix = &tm;
+
+	//Vec3 vAmbient;
+
+	//rp.AmbientColor.r = 0.7;
+	//rp.AmbientColor.g = 0.7;
+	//rp.AmbientColor.b = 0.7;
+	//rp.AmbientColor.a = 1;
+
+	//rp.dwFObjFlags = 0;
+	//rp.dwFObjFlags |= FOB_TRANS_MASK;
+	//
+	//rp.pMaterial = m_pMaterial;
+
+	//m_pModel->Render(rp, passInfo);
+	m_pRenderer->EF_EndEf3D(SHDF_ALLOWHDR | SHDF_SECONDARY_VIEWPORT, -1, -1, passInfo);
+}
+
 void YJGLSJ::CCryEngineTestViewport::Run()
 {
 	MSG msg;
@@ -363,6 +473,7 @@ void YJGLSJ::CCryEngineTestViewport::Run()
 		else
 		{
 			OnRender();
+			Sleep(10);
 		}
 	}
 }
@@ -383,10 +494,10 @@ bool YJGLSJ::CCryEngineTestViewport::InitializeWindow()
 
 	HWND windowHandle = CreateWindowEx(NULL, "CCryEngineTestViewport", m_cszTitle,
 		WS_OVERLAPPEDWINDOW | WS_VISIBLE,
-		m_ix,
-		m_iy,
-		m_iWidth,    // some random values for now.  
-		m_iHeight,    // we will come back to these soon. 
+		m_currentResolution.x,
+		m_currentResolution.y,
+		m_currentResolution.width,    // some random values for now.  
+		m_currentResolution.height,    // we will come back to these soon. 
 		nullptr,
 		nullptr,
 		m_hInstance,

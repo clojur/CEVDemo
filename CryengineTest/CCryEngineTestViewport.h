@@ -1,5 +1,6 @@
 #pragma once
 #include "IViewport.h"
+
 #include "DisplayContext.h"
 #include<CryRenderer/IRenderer.h>
 #include<Cry3DEngine/I3DEngine.h>
@@ -11,6 +12,29 @@ namespace YJGLSJ
 {
 	class CCryEngineTestViewport :public IViewport
 	{
+
+	public:
+		struct SResolution
+		{
+			SResolution() :
+				width(0), height(0),x(0),y(0)
+			{
+			}
+
+			SResolution(int x,int y,int w, int h) :
+				 x(x),y(y),width(w), height(h)
+			{
+			}
+			int x;
+			int y;
+			int width;
+			int height;
+		};
+	protected:
+		struct SPreviousContext
+		{
+
+		};
 	public:
 		CCryEngineTestViewport(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow);
 		~CCryEngineTestViewport();
@@ -24,6 +48,8 @@ namespace YJGLSJ
 
 		bool				StartProjectContext();
 
+		SPreviousContext	SetCurrentContext();
+
 		void				SetISystem(ISystem* pSystem);
 
 		ISystem*			GetISystem() { return m_pSystem; }
@@ -36,24 +62,26 @@ namespace YJGLSJ
 
 		I3DEngine*			GetIEngine() { return m_pEngine; }
 
-		bool				CreateRenderContext(uintptr_t displayContextHandle, IRenderer::EViewportType viewportType = IRenderer::EViewportType::eViewportType_Secondary);
+		bool				CreateRenderContext(HWND hWnd, IRenderer::EViewportType viewportType);
 
-		void				InitDisplayContext(uintptr_t displayContextHandle);
+		void				InitDisplayContext(SDisplayContextKey displayContextKey);
 
 		void				OnRender();
 
 		void				DrawAxis();
+
+		void				DrawModel(const SRenderingPassInfo& passInfo);
 
 		void				Run();
 
 	public:
 		virtual	bool		InitializeWindow() override;
 
-		virtual int			GetWidth()  override { return m_iWidth; }
+		virtual int			GetWidth()  override { return m_currentResolution.width; }
 
-		virtual int			GetHeight() override { return m_iHeight; }
+		virtual int			GetHeight() override { return m_currentResolution.height; }
 
-		virtual size_t		GetSafeHwnd() { return (size_t)m_hWnd; }
+		virtual void*		GetSafeHwnd()override { return m_hWnd; }
 
 		virtual	void		OnSize(int width, int height) override;
 
@@ -78,10 +106,6 @@ namespace YJGLSJ
 		int				m_nCmdShow;
 		HWND			m_hWnd;
 
-		int				m_ix;
-		int				m_iy;
-		int				m_iWidth;
-		int				m_iHeight;
 		const char*		m_cszTitle;
 
 		ISystem*		m_pSystem;
@@ -95,6 +119,12 @@ namespace YJGLSJ
 		bool			m_bRenderContextCreated;
 		bool			m_bRenderStats;
 		bool			m_bEmptyScene;
+
+		SResolution   m_currentResolution;
+		SDisplayContextKey            m_displayContextKey;
+		IStatObj*						m_pModel;
+		IMaterial*					m_pMaterial;
+		static void*              m_currentContextWnd;
 
 	};
 };
