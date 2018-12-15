@@ -96,6 +96,8 @@ bool YJGLSJ::CCryEngineTestViewport::InitEngineSystem()
 	startupParams.hWnd = nullptr;
 	startupParams.sLogFileName = "UI.log";
 	startupParams.pUserCallback = nullptr;
+	char BinDir[256] = {'\0'};
+	sprintf(startupParams.szBinariesDir, "E:\\3DEngine\\CryEngine\\CRYENGINE\\bin\\win_x64");
 
 	const char* cmdLine = GetCommandLineA();
 	cry_strcpy(startupParams.szSystemCmdLine, cmdLine);

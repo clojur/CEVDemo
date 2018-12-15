@@ -69,7 +69,9 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
-  <PropertyGroup />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <OutDir>E:\3DEngine\CryEngine\CRYENGINE\bin\win_x64\</OutDir>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -104,7 +106,7 @@
       <SDLCheck>
       </SDLCheck>
       <ConformanceMode>false</ConformanceMode>
-      <AdditionalIncludeDirectories>G:\CryEngine\CRYENGINE\Code\SDKs\Brofiler;G:\CryEngine\CRYENGINE\Code\CryEngine\CryCommon;G:\CryEngine\CRYENGINE\Code\CryEngine\CryCommon\3rdParty;G:\CryEngine\CRYENGINE\Code\SDKs\boost;G:\CryEngine\CRYENGINE\Code\CryEngine\CrySchematyc\Core\Interface</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>E:\3DEngine\CryEngine\CRYENGINE\Code\SDKs\Brofiler;E:\3DEngine\CryEngine\CRYENGINE\Code\CryEngine\CryCommon;E:\3DEngine\CryEngine\CRYENGINE\Code\CryEngine\CryCommon\3rdParty;E:\3DEngine\CryEngine\CRYENGINE\Code\SDKs\boost;E:\3DEngine\CryEngine\CRYENGINE\Code\CryEngine\CrySchematyc\Core\Interface</AdditionalIncludeDirectories>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <PreprocessorDefinitions>NDEBUG;_PROFILE;CRY_IS_APPLICATION;CODE_BASE_FOLDER="G:/CryEngine/CRYENGINE-stabilisation/Code/";ENABLE_DEVELOPER_CONSOLE_IN_RELEASE;SUPPORT_UNSIGNED_PAKS;_WINDOWS;WIN32;_WIN32;_WIN64;CRYENGINE_DEFINE;UQS_SCHEMATYC_SUPPORT=1;USE_BROFILER;CMAKE_INTDIR="Profile";%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
@@ -123,7 +125,7 @@
       <AdditionalOptions>%(AdditionalOptions) /utf-8 /bigobj /Zo</AdditionalOptions>
     </ClCompile>
     <Link>
-      <AdditionalLibraryDirectories>G:/CryEngine/CRYENGINE/Code/SDKs/Brofiler;G:/CryEngine/CRYENGINE/Code/SDKs/Brofiler/$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>E:\3DEngine\CryEngine/CRYENGINE/Code/SDKs/Brofiler;E:\3DEngine\CryEngine/CRYENGINE/Code/SDKs/Brofiler/$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>Ntdll.lib;User32.lib;Advapi32.lib;Ws2_32.lib;ProfilerCore64.lib;Shell32.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
