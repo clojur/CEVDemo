@@ -2,7 +2,7 @@
 
 ## 它是什么？
 
-这个工程是把CryEngigne当第三方库调用的小例子，是一个纯粹的Visual Studio工程，通过它你可以明白CryEngine大体架构和内部运行逻辑。相信通过大家不断努力后可以实现CryEngine像OSG、OGRE等类似的第三方库来使用。
+这个工程是把CryEngine当第三方库调用的小例子，是一个纯粹的Visual Studio工程，通过它你可以明白CryEngine大体架构和内部运行逻辑。相信通过大家不断努力后可以实现CryEngine像OSG、OGRE等类似的第三方库来使用。
 
 ## 如何使用？
 
